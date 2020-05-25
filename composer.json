@@ -1,7 +1,7 @@
 {
   "name": "bhutanio/rutorrent-api",
   "description": "rutorrent API",
-  "license": "proprietary",
+  "license": "MIT",
   "require": {
     "php": "^7.2.5",
     "ext-json": "*",

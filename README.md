@@ -1,1 +1,1 @@
-# RTorrent PHP API
+# RuTorrent API
