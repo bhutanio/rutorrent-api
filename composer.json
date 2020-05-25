@@ -1,0 +1,16 @@
+{
+  "name": "bhutanio/rutorrent-api",
+  "description": "rutorrent API",
+  "license": "proprietary",
+  "require": {
+    "php": "^7.2.5",
+    "ext-json": "*",
+    "guzzlehttp/guzzle": "^6.5",
+    "illuminate/http": "^6.0|^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Bhutanio\\": "src/Bhutanio/"
+    }
+  }
+}
