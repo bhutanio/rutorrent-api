@@ -2,9 +2,12 @@
 
 namespace Bhutanio\RuTorrent;
 
+use Bhutanio\RuTorrent\Models\Scrape;
 use Bhutanio\RuTorrent\Models\Torrent;
 use Exception;
 use Illuminate\Http\Client;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 class RuTorrent
 {
@@ -23,51 +26,100 @@ class RuTorrent
      */
     private $auth;
 
+    /**
+     * RuTorrent constructor.
+     *
+     * @param $url
+     * @param $auth
+     */
     public function __construct($url, $auth)
     {
-        $this->url = $url;
+        $this->url = rtrim($url, '/');
         $this->auth = $auth;
 
         $this->client = $this->initClient();
     }
 
+    public function getConfig()
+    {
+        return $this->parseConfig($this->postAction('stg'));
+    }
+
+    public function getCpuLoad()
+    {
+        return $this->getAction('/plugins/cpuload/action.php?_=' . time())['load'];
+    }
+
+    public function getDiskSpace()
+    {
+        return $this->getAction('/plugins/diskspace/action.php?_=' . time());
+    }
+
+    public function getTorrents()
+    {
+        $response = $this->postAction('list');
+
+        return $this->torrentModels($response);
+    }
+
+    public function getScrapeAll()
+    {
+        return $this->parseScrapeAll($this->postAction('trkall'));
+    }
+
     public function startTorrent($info_hash)
     {
-        return $this->actionTorrent($info_hash, 'start');
+        return $this->postAction('start', $info_hash);
     }
 
     public function stopTorrent($info_hash)
     {
-        return $this->actionTorrent($info_hash, 'stop');
+        return $this->postAction('stop', $info_hash);
+    }
+
+    public function pauseTorrent($info_hash)
+    {
+        return $this->postAction('pause', $info_hash);
+    }
+
+    public function unpauseTorrent($info_hash)
+    {
+        return $this->postAction('unpause', $info_hash);
     }
 
     public function deleteTorrent($info_hash)
     {
-        return $this->actionTorrent($info_hash, 'remove');
+        return $this->postAction('remove', $info_hash);
     }
 
-    public function actionTorrent($info_hash, $action)
+    public function getAction($url)
     {
-        if (!in_array($action, ['recheck', 'start', 'stop', 'pause', 'unpause', 'remove', 'trk', 'trkstate', 'trkall', 'ttl', 'stg'])) {
+        $response = $this->client->get($this->url . $url);
+        if ($response->status() >= 400) {
+            return $response->throw();
+        }
+
+        return $response->json();
+    }
+
+    public function postAction($action, $info_hash = null, $url = '/plugins/httprpc/action.php')
+    {
+        if (!in_array($action, ['list', 'recheck', 'start', 'stop', 'pause', 'unpause', 'remove', 'trk', 'trkstate', 'trkall', 'ttl', 'stg'])) {
             throw new Exception('Unknown Action');
         }
 
-        $info_hash = strtoupper($info_hash);
-        $response = $this->client->asForm()->post($this->url . '/plugins/httprpc/action.php', [
-            'mode' => $action,
-            'hash' => $info_hash,
-        ]);
+        $parameters['mode'] = $action;
+
+        if ($info_hash) {
+            $parameters['hash'] = strtoupper($info_hash);
+        }
+
+        $response = $this->client->asForm()->post($this->url . $url, $parameters);
+        if ($response->status() >= 400) {
+            return $response->throw();
+        }
 
         return $this->parseResponse($response->body());
-    }
-
-    public function torrentList()
-    {
-        $response = $this->client->asForm()->post($this->url . '/plugins/httprpc/action.php', [
-            'mode' => 'list',
-        ]);
-
-        return $this->torrentModels($response->json());
     }
 
     public function addTorrent($file, $path = '')
@@ -110,9 +162,9 @@ class RuTorrent
             return $response;
         }
 
-        if (count($data) == 34) {
-            return $this->torrentModels(['t' => $data]);
-        }
+//        if (is_array($data) && count($data) == 34) {
+//            return $this->torrentModels(['t' => $data]);
+//        }
 
         return $data;
     }
@@ -135,5 +187,74 @@ class RuTorrent
         if ($response->status() >= 400) {
             return $response->throw();
         }
+    }
+
+    private function parseConfig($data)
+    {
+        $keys = [
+            "dht",
+            "get_check_hash",
+            "get_bind",
+            "get_dht_port",
+            "get_directory",
+            "get_download_rate",
+            "get_hash_interval",
+            "get_hash_max_tries",
+            "get_hash_read_ahead",
+            "get_http_cacert",
+            "get_http_capath",
+            "get_http_proxy",
+            "get_ip",
+            "get_max_downloads_div",
+            "get_max_downloads_global",
+            "get_max_file_size",
+            "get_max_memory_usage",
+            "get_max_open_files",
+            "get_max_open_http",
+            "get_max_peers",
+            "get_max_peers_seed",
+            "get_max_uploads",
+            "get_max_uploads_global",
+            "get_min_peers_seed",
+            "get_min_peers",
+            "get_peer_exchange",
+            "get_port_open",
+            "get_upload_rate",
+            "get_port_random",
+            "get_port_range",
+            "get_preload_min_size",
+            "get_preload_required_rate",
+            "get_preload_type",
+            "get_proxy_address",
+            "get_receive_buffer_size",
+            "get_safe_sync",
+            "get_scgi_dont_route",
+            "get_send_buffer_size",
+            "get_session",
+            "get_session_lock",
+            "get_session_on_completion",
+            "get_split_file_size",
+            "get_split_suffix",
+            "get_timeout_safe_sync",
+            "get_timeout_sync",
+            "get_tracker_numwant",
+            "get_use_udp_trackers",
+            "get_max_uploads_div",
+            "get_max_open_sockets",
+        ];
+
+        return array_combine($keys, $data);
+    }
+
+    private function parseScrapeAll($response)
+    {
+        $collection = collect();
+        if (!empty($response)) {
+            foreach ($response as $info_hash => $data) {
+                $collection->add(new Scrape($info_hash, Arr::first($data)));
+            }
+        }
+
+        return $collection;
     }
 }

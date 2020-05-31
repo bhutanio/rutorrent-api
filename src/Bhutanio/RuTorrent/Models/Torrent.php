@@ -9,22 +9,22 @@ class Torrent
     /**
      * @var string
      */
-    public $info_hash;
+    public $info_hash, $created_at, $name, $path;
 
     /**
-     * @var string
+     * @var int
      */
-    public $name;
+    public $size, $downloaded, $uploaded, $left;
 
     /**
-     * @var \Carbon\Carbon
+     * @var float
      */
-    public $created_at;
+    public $ratio;
 
     /**
-     * @var string
+     * @var bool
      */
-    public $base_path;
+    public $is_active, $is_complete, $is_folder, $is_private;
 
     public function __construct($info_hash, $data)
     {
@@ -36,7 +36,25 @@ class Torrent
 
         $this->created_at = (new Carbon(intval($raw['get_creation_date'])))->toDateTimeString();
 
-        $this->base_path = $raw['get_base_path'];
+        $this->path = $raw['get_base_path'];
+
+        $this->size = (int)$raw['get_size_bytes'];
+
+        $this->downloaded = (int)$raw['get_bytes_done'];
+
+        $this->uploaded = (int)$raw['get_up_total'];
+
+        $this->left = (int)$raw['get_left_bytes'];
+
+        $this->ratio = number_format(($this->uploaded ? $this->downloaded / $this->uploaded : 0), 2);
+
+        $this->is_active = (bool)$raw['is_active'];
+
+        $this->is_complete = $this->left == 0;
+
+        $this->is_folder = (bool)$raw['is_multi_file'];
+
+        $this->is_private = (bool)$raw['is_private'];
     }
 
     public function keys()
@@ -45,7 +63,7 @@ class Torrent
             0 => "is_open",
             1 => "is_hash_checking",
             2 => "is_hash_checked",
-            3 => "get_state",
+            3 => "get_state", // 1 = active 0 = inactive
             4 => "get_name",
             5 => "get_size_bytes",
             6 => "get_completed_chunks",
@@ -77,5 +95,10 @@ class Torrent
             32 => "is_private",
             33 => "is_multi_file",
         ];
+    }
+
+    private function getStatus($data)
+    {
+
     }
 }
