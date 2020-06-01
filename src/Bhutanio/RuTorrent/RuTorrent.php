@@ -7,7 +7,6 @@ use Bhutanio\RuTorrent\Models\Torrent;
 use Exception;
 use Illuminate\Http\Client;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 
 class RuTorrent
 {
@@ -143,7 +142,7 @@ class RuTorrent
             $headers['Authorization'] = $this->auth;
         }
 
-        $client = (new Client\PendingRequest())->withHeaders($headers);
+        $client = (new Client\PendingRequest())->withHeaders($headers)->withOptions(['verify' => false]);
 
         if (is_array($this->auth) && count($this->auth) == 2) {
             $client->withBasicAuth($this->auth[0], $this->auth[1]);
