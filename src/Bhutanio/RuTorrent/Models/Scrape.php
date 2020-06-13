@@ -30,8 +30,8 @@ class Scrape
         $this->url = $raw['get_url'];
         $this->group = $raw['get_group'];
         $this->seed = (int)$raw['get_scrape_complete'];
-        $this->peer = (int)$raw['get_scrape_complete'];
-        $this->downloaded = (int)$raw['get_scrape_complete'];
+        $this->peer = (int)$raw['get_scrape_incomplete'];
+        $this->downloaded = (int)$raw['get_scrape_downloaded'];
         $this->is_enabled = (bool)$raw['is_enabled'];
     }
 
