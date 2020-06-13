@@ -121,12 +121,12 @@ class RuTorrent
         return $this->parseResponse($response->body());
     }
 
-    public function addTorrent($file, $path = '')
+    public function addTorrent($file, $path = '', $file_name = null)
     {
         $path_append = $path ? '&dir_edit=' . urlencode($path) : '';
 
         $response = $this->client
-            ->attach('torrent_file', fopen($file, 'r'))
+            ->attach('torrent_file', fopen($file, 'r'), $file_name)
             ->post($this->url . '/php/addtorrent.php?json=1' . $path_append);
 
         return $this->parseResponse($response->body());
