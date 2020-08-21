@@ -132,6 +132,48 @@ class RuTorrent
         return $this->parseResponse($response->body());
     }
 
+    public function addComment($hash, $comment)
+    {
+        return $this->editTorrent($hash, ['set_comment' => 1, 'comment' => $comment]);
+    }
+
+    public function addTrackers($hash, $trackers)
+    {
+        $data = 'set_trackers=1&';
+        if (count($trackers) > 1) {
+            foreach ($trackers as $tracker) {
+                $data .= 'tracker=&tracker=' . $tracker . '&';
+            }
+        } else {
+            $data .= 'tracker=' . $trackers[0];
+        }
+
+        $data = rtrim($data, '&');
+
+        return $this->editTorrent($hash, $data);
+    }
+
+    public function editTorrent($hash, $data)
+    {
+        $hash = strtoupper($hash);
+
+        if (is_array($data)) {
+            $payload['hash'] = $hash;
+            foreach ($data as $key => $value) {
+                $payload[$key] = $value;
+            }
+            $payload = http_build_query($payload, null, '&', 2);
+        } else {
+            $payload = 'hash=' . $hash . '&' . $data;
+        }
+
+        $response = $this->client
+            ->withBody($payload, 'application/x-www-form-urlencoded')
+            ->post($this->url . '/plugins/edit/action.php');
+
+        return $this->parseResponse($response->body());
+    }
+
     private function initClient()
     {
         $headers = [
