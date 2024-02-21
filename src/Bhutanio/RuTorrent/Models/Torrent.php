@@ -46,7 +46,7 @@ class Torrent
 
         $this->left = (int)$raw['get_left_bytes'];
 
-        $this->ratio = number_format(($this->uploaded ? $this->downloaded / $this->uploaded : 0), 2);
+        $this->ratio = number_format(($this->uploaded ? $this->uploaded / $this->downloaded : 0), 2);
 
         $this->is_active = (bool)$raw['is_active'];
 
